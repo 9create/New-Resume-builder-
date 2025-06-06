@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ResumeBuilder Pro | Create Professional Resumes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            min-height: 100vh;
+            position: relative;
+            padding-bottom: 100px;
+        }
+        
+        .resume-section {
+            transition: all 0.3s ease;
+            border-left: 3px solid #3b82f6;
+        }
+        
+        .resume-section:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .template-card {
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .template-card:hover, .template-card.selected {
+            transform: scale(1.03);
+            border-color: #3b82f6;
+        }
+        
+        .resume-preview {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            min-height: 842px;
+            background: white;
+            width: 595px;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #3b82f6;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .skill-tag {
+            display: inline-flex;
+            align-items: center;
+            background-color: #dbeafe;
+            border-radius: 20px;
+            padding: 4px 12px;
+            margin: 4px;
+        }
+        
+        .remove-skill {
+            cursor: pointer;
+            margin-left: 6px;
+            color: #93c5fd;
+        }
+        
+        .remove-skill:hover {
+            color: #ef4444;
+        }
+        
+        .watermark {
+            position: absolute;
+            opacity: 0.15;
+            font-size: 120px;
+            font-weight: 800;
+            color: #3b82f6;
+            transform: rotate(-30deg);
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        @media (max-width: 1024px) {
+            .resume-preview {
+                width: 100%;
+                min-height: auto;
+            }
+        }
+        
+        /* Footer styling */
+        footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.03);
+            padding: 15px 0;
+            text-align: center;
+            font-size: 14px;
+            color: #4b5563;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .developer-name {
+            font-weight: 600;
+            color: #3b82f6;
+            text-decoration: none;
+        }
+        
+        .social-links {
+            margin-top: 8px;
+        }
+        
+        .social-links a {
+            display: inline-block;
+            margin: 0 8px;
+            color: #4b5563;
+            transition: all 0.3s ease;
+        }
+        
+        .social-links a:hover {
+            color: #3b82f6;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="text-center md:text-left mb-4 md:mb-0">
+                <h1 class="text-3xl font-bold flex items-center justify-center md:justify-start">
+                    <i class="fas fa-file-alt mr-3"></i>ResumeBuilder Pro
+                </h1>
+                <p class="mt-1 text-blue-100">Create professional resumes in minutes</p>
+            </div>
+            <div class="flex space-x-4">
+                <button id="saveBtn" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition">
+                    <i class="fas fa-save mr-2"></i>Save
+                </button>
+                <button id="exportBtn" class="bg-amber-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-amber-600 transition flex items-center">
+                    <i class="fas fa-download mr-2"></i>Export PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="container mx-auto px-4 mt-6">
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-medium text-gray-700">Resume Completion</span>
+                <span class="text-blue-600 font-bold" id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 mt-8 mb-20">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <!-- Editor Panel -->
+            <div class="w-full lg:w-1/2 bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-edit mr-3 text-blue-500"></i>Build Your Resume
+                </h2>
+                
+                <!-- Template Selection -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-700">Choose a Template</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="template-card p-3 rounded-lg border cursor-pointer selected" data-template="professional">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 mx-auto mb-2"></div>
+                            <p class="text-center text-sm">Professional</p>
+                        </div>
+                        <div class="template-card p-3 rounded-lg border cursor-pointer" data-template="modern">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 mx-auto mb-2"></div>
+                            <p class="text-center text-sm">Modern</p>
+                        </div>
+                        <div class="template-card p-3 rounded-lg border cursor-pointer" data-template="creative">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 mx-auto mb-2"></div>
+                            <p class="text-center text-sm">Creative</p>
+                        </div>
+                        <div class="template-card p-3 rounded-lg border cursor-pointer" data-template="minimal">
+                            <div class="bg-gray-200 border-2 border-dashed rounded-xl w-16 h-16 mx-auto mb-2"></div>
+                            <p class="text-center text-sm">Minimal</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Personal Info Form -->
+                <div class="resume-section p-5 mb-6 rounded-lg bg-gray-50">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-600 flex items-center">
+                        <i class="fas fa-user-circle mr-2"></i>Personal Information
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" id="fullName" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="John Doe">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                            <input type="text" id="jobTitle" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Software Engineer">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                            <input type="email" id="email" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="john@example.com">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                            <input type="tel" id="phone" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="(123) 456-7890">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                            <input type="text" id="address" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="New York, NY">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Profile Summary</label>
+                            <textarea id="summary" class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" rows="3" placeholder="Passionate software engineer with 5+ years of experience..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Skills Section -->
+                <div class="resume-section p-5 mb-6 rounded-lg bg-gray-50">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-600 flex items-center">
+                        <i class="fas fa-code mr-2"></i>Skills
+                    </h3>
+                    <div class="mb-4">
+                        <div class="flex">
+                            <input type="text" id="newSkill" class="flex-grow px-4 py-2 border rounded-l-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Add a skill (e.g. JavaScript)">
+                            <button id="addSkillBtn" class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600 transition">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="skillsContainer" class="flex flex-wrap">
+                        <!-- Skills will be added here dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Experience Section -->
+                <div class="resume-section p-5 mb-6 rounded-lg bg-gray-50">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-600 flex items-center">
+                        <i class="fas fa-briefcase mr-2"></i>Work Experience
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="experience-entry p-4 border rounded-lg">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                                    <input type="text" class="job-title w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Senior Developer">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                                    <input type="text" class="company w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Tech Solutions Inc.">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                                    <input type="text" class="start-date w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Jan 2020">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                                    <input type="text" class="end-date w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Present">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <textarea class="job-desc w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" rows="2" placeholder="Developed web applications using modern JavaScript frameworks..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="addExperienceBtn" class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition w-full">
+                        <i class="fas fa-plus mr-2"></i>Add Another Position
+                    </button>
+                </div>
+                
+                <!-- Education Section -->
+                <div class="resume-section p-5 rounded-lg bg-gray-50">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-600 flex items-center">
+                        <i class="fas fa-graduation-cap mr-2"></i>Education
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="education-entry p-4 border rounded-lg">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Degree</label>
+                                    <input type="text" class="degree w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Bachelor of Science">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Institution</label>
+                                    <input type="text" class="institution w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="University of Technology">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Graduation Year</label>
+                                    <input type="text" class="grad-year w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="2018">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Field of Study</label>
+                                    <input type="text" class="field w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Computer Science">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button id="addEducationBtn" class="mt-4 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition w-full">
+                        <i class="fas fa-plus mr-2"></i>Add Another Education
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Preview Panel -->
+            <div class="w-full lg:w-1/2">
+                <div class="bg-white rounded-xl shadow-lg p-6 sticky top-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                            <i class="fas fa-eye mr-3 text-blue-500"></i>Resume Preview
+                        </h2>
+                        <button id="refreshPreviewBtn" class="bg-gray-200 text-gray-700 px-3 py-1 rounded-lg text-sm">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="resume-preview mx-auto p-8 relative">
+                        <div class="watermark">PRO</div>
+                        <!-- Resume content will be rendered here -->
+                        <div id="resumeContent">
+                            <div class="text-center mb-8">
+                                <h1 id="previewName" class="text-3xl font-bold text-gray-800">John Doe</h1>
+                                <p id="previewTitle" class="text-xl text-gray-600">Software Engineer</p>
+                            </div>
+                            
+                            <div class="flex justify-center mb-6">
+                                <div class="flex items-center mr-6 text-gray-600">
+                                    <i class="fas fa-envelope mr-2"></i>
+                                    <span id="previewEmail">john@example.com</span>
+                                </div>
+                                <div class="flex items-center mr-6 text-gray-600">
+                                    <i class="fas fa-phone mr-2"></i>
+                                    <span id="previewPhone">(123) 456-7890</span>
+                                </div>
+                                <div class="flex items-center text-gray-600">
+                                    <i class="fas fa-map-marker-alt mr-2"></i>
+                                    <span id="previewAddress">New York, NY</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h2 class="text-xl font-bold text-gray-800 border-b pb-2 mb-3 flex items-center">
+                                    <i class="fas fa-user-circle mr-2 text-blue-500"></i>Profile
+                                </h2>
+                                <p id="previewSummary" class="text-gray-700">
+                                    Passionate software engineer with 5+ years of experience building scalable web applications...
+                                </p>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h2 class="text-xl font-bold text-gray-800 border-b pb-2 mb-3 flex items-center">
+                                    <i class="fas fa-code mr-2 text-blue-500"></i>Skills
+                                </h2>
+                                <div id="previewSkills" class="flex flex-wrap">
+                                    <span class="skill-tag">JavaScript</span>
+                                    <span class="skill-tag">React</span>
+                                    <span class="skill-tag">Node.js</span>
+                                    <span class="skill-tag">HTML/CSS</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-8">
+                                <h2 class="text-xl font-bold text-gray-800 border-b pb-2 mb-3 flex items-center">
+                                    <i class="fas fa-briefcase mr-2 text-blue-500"></i>Work Experience
+                                </h2>
+                                <div class="mb-4">
+                                    <div class="flex justify-between">
+                                        <h3 class="font-bold text-lg">Senior Developer</h3>
+                                        <span class="text-gray-600">Jan 2020 - Present</span>
+                                    </div>
+                                    <p class="text-blue-600">Tech Solutions Inc.</p>
+                                    <p class="text-gray-700 mt-2">Developed web applications using modern JavaScript frameworks...</p>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-800 border-b pb-2 mb-3 flex items-center">
+                                    <i class="fas fa-graduation-cap mr-2 text-blue-500"></i>Education
+                                </h2>
+                                <div class="flex justify-between">
+                                    <h3 class="font-bold text-lg">Bachelor of Science in Computer Science</h3>
+                                    <span class="text-gray-600">2018</span>
+                                </div>
+                                <p class="text-blue-600">University of Technology</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container mx-auto">
+            <p>Created with ❤️ by <a href="#" class="developer-name">Mayur Nagrare</a></p>
+            <div class="social-links">
+                <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+                <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                <a href="#" title="Portfolio"><i class="fas fa-globe"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize skills array
+            let skills = ['JavaScript', 'React', 'Node.js'];
+            
+            // DOM Elements
+            const fullNameEl = document.getElementById('fullName');
+            const jobTitleEl = document.getElementById('jobTitle');
+            const emailEl = document.getElementById('email');
+            const phoneEl = document.getElementById('phone');
+            const addressEl = document.getElementById('address');
+            const summaryEl = document.getElementById('summary');
+            const newSkillEl = document.getElementById('newSkill');
+            const addSkillBtn = document.getElementById('addSkillBtn');
+            const skillsContainer = document.getElementById('skillsContainer');
+            const addExperienceBtn = document.getElementById('addExperienceBtn');
+            const addEducationBtn = document.getElementById('addEducationBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            const saveBtn = document.getElementById('saveBtn');
+            const progressFill = document.getElementById('progressFill');
+            const progressPercent = document.getElementById('progressPercent');
+            const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
+            
+            // Preview elements
+            const previewName = document.getElementById('previewName');
+            const previewTitle = document.getElementById('previewTitle');
+            const previewEmail = document.getElementById('previewEmail');
+            const previewPhone = document.getElementById('previewPhone');
+            const previewAddress = document.getElementById('previewAddress');
+            const previewSummary = document.getElementById('previewSummary');
+            const previewSkills = document.getElementById('previewSkills');
+            
+            // Initialize skills display
+            renderSkills();
+            
+            // Event Listeners
+            [fullNameEl, jobTitleEl, emailEl, phoneEl, addressEl, summaryEl].forEach(el => {
+                el.addEventListener('input', updatePreview);
+            });
+            
+            addSkillBtn.addEventListener('click', addSkill);
+            newSkillEl.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addSkill();
+            });
+            
+            exportBtn.addEventListener('click', exportPDF);
+            saveBtn.addEventListener('click', saveResume);
+            refreshPreviewBtn.addEventListener('click', updatePreview);
+            
+            // Template selection
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+                    // Here you would implement template switching
+                });
+            });
+            
+            // Functions
+            function updatePreview() {
+                previewName.textContent = fullNameEl.value || 'John Doe';
+                previewTitle.textContent = jobTitleEl.value || 'Software Engineer';
+                previewEmail.textContent = emailEl.value || 'john@example.com';
+                previewPhone.textContent = phoneEl.value || '(123) 456-7890';
+                previewAddress.textContent = addressEl.value || 'New York, NY';
+                previewSummary.textContent = summaryEl.value || 'Passionate software engineer with 5+ years of experience...';
+                
+                calculateProgress();
+            }
+            
+            function addSkill() {
+                const skill = newSkillEl.value.trim();
+                if (skill && !skills.includes(skill)) {
+                    skills.push(skill);
+                    renderSkills();
+                    newSkillEl.value = '';
+                    updateSkillsPreview();
+                }
+            }
+            
+            function renderSkills() {
+                skillsContainer.innerHTML = '';
+                skills.forEach(skill => {
+                    const skillEl = document.createElement('div');
+                    skillEl.className = 'skill-tag';
+                    skillEl.innerHTML = `
+                        ${skill}
+                        <span class="remove-skill" data-skill="${skill}">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    `;
+                    skillsContainer.appendChild(skillEl);
+                });
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-skill').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const skillToRemove = this.getAttribute('data-skill');
+                        skills = skills.filter(skill => skill !== skillToRemove);
+                        renderSkills();
+                        updateSkillsPreview();
+                    });
+                });
+            }
+            
+            function updateSkillsPreview() {
+                previewSkills.innerHTML = '';
+                skills.forEach(skill => {
+                    const skillEl = document.createElement('span');
+                    skillEl.className = 'skill-tag';
+                    skillEl.textContent = skill;
+                    previewSkills.appendChild(skillEl);
+                });
+            }
+            
+            function calculateProgress() {
+                const fields = [
+                    fullNameEl, jobTitleEl, emailEl, 
+                    phoneEl, addressEl, summaryEl
+                ];
+                
+                let filledCount = 0;
+                fields.forEach(field => {
+                    if (field.value.trim() !== '') filledCount++;
+                });
+                
+                const progress = Math.min(100, Math.floor((filledCount / fields.length) * 100));
+                progressFill.style.width = `${progress}%`;
+                progressPercent.textContent = `${progress}%`;
+            }
+            
+            function exportPDF() {
+                const element = document.getElementById('resumeContent');
+                const opt = {
+                    margin: 10,
+                    filename: 'my-resume.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                
+                html2pdf().set(opt).from(element).save();
+            }
+            
+            function saveResume() {
+                const resumeData = {
+                    personal: {
+                        name: fullNameEl.value,
+                        title: jobTitleEl.value,
+                        email: emailEl.value,
+                        phone: phoneEl.value,
+                        address: addressEl.value,
+                        summary: summaryEl.value
+                    },
+                    skills: skills,
+                    // Add experience and education data here
+                };
+                
+                localStorage.setItem('resumeData', JSON.stringify(resumeData));
+                alert('Resume saved successfully!');
+            }
+            
+            // Load saved data if exists
+            const savedData = localStorage.getItem('resumeData');
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                fullNameEl.value = data.personal.name || '';
+                jobTitleEl.value = data.personal.title || '';
+                emailEl.value = data.personal.email || '';
+                phoneEl.value = data.personal.phone || '';
+                addressEl.value = data.personal.address || '';
+                summaryEl.value = data.personal.summary || '';
+                skills = data.skills || [];
+                
+                renderSkills();
+                updatePreview();
+            }
+            
+            // Add year to footer
+            document.querySelector('footer p').innerHTML += ` &copy; ${new Date().getFullYear()}`;
+        });
+    </script>
+</body>
+</html>
